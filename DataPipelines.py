@@ -28,7 +28,10 @@ class DataPipelinesInterface(metaclass=ABCMeta):
 class WebDataPipeline(DataPipelinesInterface):
     """Process Web data"""
     def __init__(self) -> None:
-        _datasource = None
+        self._datasource = None
+        self.raw_data_ = tuple()
+        self.byte_pos = 0
+        self.FILE_SIZE = 0
 
     def __set__(self, datasource: str) -> None:
         """set the datasource"""
@@ -48,12 +51,22 @@ class WebDataPipeline(DataPipelinesInterface):
             raise AttributeError("Error: datasource has not been set")
         self._datasource = None
 
-    def import_data_source(self):
+    def import_data_source(self, chunk_size=100):
         """connect to data source"""
         try:
-            r = requests.get(url=self._datasource)
+            r = requests.get(url=self._datasource, stream=True)
             if r.status_code == 200:
                 print("Successfully connected: status[{}]".format(r.status_code))
+                for chunk in r.iter_content(chunk_size):
+                    self.FILE_SIZE += chunk_size
+                """
+                while True:
+                    self.raw_data_ = self.raw_data_ + str(r.content[self.byte_pos:chunk_size+self.byte_pos].decode('utf-8'))
+                    self.byte_pos += chunk_size
+                    if
+                """
+                #print("current chunk:\n",self.raw_data_)
+                
             else:
                 raise ConnectionError("Error: connection failed: status[{}]".format(r.status_code))
         except ConnectionError as e:
@@ -73,11 +86,10 @@ def main():
     # --- create pipeline
     web_pipeline = WebDataPipeline()
     web_pipeline.__set__(datasource=url_)
-    web_pipeline.import_data_source()
+    web_pipeline.import_data_source(chunk_size=100)
+    web_pipeline.import_data_source(chunk_size=100)
+    print("FILE_SIZE: bytes={}".format(web_pipeline.FILE_SIZE))
         
         
 if __name__=='__main__':
     main()
-
-
-    
